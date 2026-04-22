@@ -17,6 +17,12 @@
   <main class="container">
     <section class="controls">
       <div class="veda-switch" id="vedaSwitch"></div>
+
+      <section class="selector-panel" aria-label="Hierarchical verse selectors">
+        <h2 class="selector-title">वांछित मन्त्र चुनें! / Choose desired mantra</h2>
+        <div id="hierarchySelectors" class="hierarchy-grid"></div>
+      </section>
+
       <div class="toolbar">
         <input id="searchInput" type="search" placeholder="Search across visible Veda data..." aria-label="Search" />
         <select id="pageSize" aria-label="Page size">
@@ -36,6 +42,7 @@
   <template id="recordTemplate">
     <article class="record-card">
       <h3 class="record-title"></h3>
+      <a class="record-link" href="#">Open dedicated verse page</a>
       <dl class="record-fields"></dl>
     </article>
   </template>
