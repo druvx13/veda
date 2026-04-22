@@ -104,6 +104,65 @@ body {
   font-family: inherit;
 }
 
+
+.filter-note {
+  margin: 0 0 .5rem;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.advanced-filter-grid {
+  display: grid;
+  gap: .5rem;
+}
+
+.advanced-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-size: .92rem;
+  color: #22334c;
+}
+
+.advanced-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+
+.advanced-actions button {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  padding: .35rem .6rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.advanced-actions button:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.advanced-list {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid #e6eaf3;
+  border-radius: 8px;
+  background: #fff;
+  padding: .45rem;
+  display: grid;
+  gap: .35rem;
+}
+
+.advanced-item {
+  display: flex;
+  align-items: flex-start;
+  gap: .4rem;
+  font-size: .9rem;
+  color: #2d3f5a;
+}
+
 .toolbar {
   display: grid;
   grid-template-columns: 1fr auto;
