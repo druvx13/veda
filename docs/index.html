@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>VedaKosh — Four Vedas</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>VedaKosh — Four Vedas</h1>
+      <p class="subtitle">Sanskrit text, translations, and metadata from FourVedas20200922.xlsx</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="controls">
+      <div class="veda-switch" id="vedaSwitch"></div>
+      <div class="toolbar">
+        <input id="searchInput" type="search" placeholder="Search across visible Veda data..." aria-label="Search" />
+        <select id="pageSize" aria-label="Page size">
+          <option value="10">10 / page</option>
+          <option value="20" selected>20 / page</option>
+          <option value="50">50 / page</option>
+        </select>
+      </div>
+      <div class="meta" id="meta"></div>
+    </section>
+
+    <section id="results" class="results"></section>
+
+    <nav class="pagination" id="pagination"></nav>
+  </main>
+
+  <template id="recordTemplate">
+    <article class="record-card">
+      <h3 class="record-title"></h3>
+      <dl class="record-fields"></dl>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>

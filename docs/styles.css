@@ -1,0 +1,152 @@
+@font-face {
+  font-family: 'Uttara';
+  src: url('assets/Uttara_Font.ttf') format('truetype');
+  font-display: swap;
+}
+
+:root {
+  --bg: #f5f7fb;
+  --surface: #fff;
+  --text: #1e2a39;
+  --muted: #607189;
+  --line: #d8dee9;
+  --primary: #2753b2;
+  --primary-soft: #e8efff;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Uttara', 'Noto Serif Devanagari', serif;
+  line-height: 1.45;
+}
+
+.topbar {
+  background: linear-gradient(135deg, #1c3f8b, #2656be);
+  color: #fff;
+  padding: 1rem;
+}
+.topbar h1 { margin: 0; font-size: clamp(1.2rem, 4vw, 2rem); }
+.subtitle { margin: .35rem 0 0; opacity: .9; font-size: .95rem; }
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: .85rem;
+}
+
+.controls {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: .75rem;
+  margin-bottom: .9rem;
+}
+
+.veda-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: .65rem;
+}
+
+.veda-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  padding: .45rem .7rem;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: .92rem;
+}
+.veda-btn.active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .5rem;
+}
+.toolbar input,
+.toolbar select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: .55rem .65rem;
+  font-size: .96rem;
+  font-family: inherit;
+}
+.meta {
+  margin-top: .5rem;
+  color: var(--muted);
+  font-size: .92rem;
+}
+
+.results {
+  display: grid;
+  gap: .7rem;
+}
+.record-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: .7rem;
+}
+.record-title {
+  margin: 0 0 .55rem;
+  color: var(--primary);
+  font-size: 1.05rem;
+}
+.record-fields {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .35rem;
+}
+.record-fields div {
+  border-top: 1px dashed #e2e7f0;
+  padding-top: .3rem;
+}
+.record-fields dt {
+  font-weight: 700;
+  color: #2f3e55;
+  margin: 0 0 .1rem;
+}
+.record-fields dd {
+  margin: 0;
+  word-break: break-word;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  margin: 1rem 0;
+}
+.pagination button {
+  border: 1px solid var(--line);
+  background: #fff;
+  padding: .45rem .7rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.pagination button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+@media (min-width: 700px) {
+  .container { padding: 1rem; }
+  .toolbar { grid-template-columns: 1fr auto; }
+  .record-fields { grid-template-columns: 1fr 1fr; gap: .55rem .8rem; }
+  .record-fields div { border-top: 0; border-left: 1px dashed #e2e7f0; padding-left: .6rem; padding-top: 0; }
+  .record-fields div:nth-child(odd) { border-left: 0; padding-left: 0; }
+}
