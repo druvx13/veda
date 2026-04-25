@@ -50,6 +50,12 @@ const appState = {
   page: 1,
   pageSize: 20,
   selectorValues: [],
+  rangeFilter: {
+    mode: 'section',
+    start: '',
+    end: '',
+    wholeVeda: false
+  },
   filterPrefs: loadFilterPrefs()
 };
 
@@ -59,6 +65,7 @@ const advancedFilterPanel = document.getElementById('advancedFilterPanel');
 const advancedFilterSummary = document.getElementById('advancedFilterSummary');
 const searchInput = document.getElementById('searchInput');
 const pageSizeEl = document.getElementById('pageSize');
+const rangeFilterPanel = document.getElementById('rangeFilterPanel');
 const meta = document.getElementById('meta');
 const results = document.getElementById('results');
 const pagination = document.getElementById('pagination');
@@ -130,6 +137,60 @@ function searchableText(record, keys) {
   return keys.map((k) => normalizeValue(record[k])).join(' ').toLowerCase();
 }
 
+function compareReferenceValues(a, b) {
+  return normalizeValue(a).localeCompare(normalizeValue(b), 'hi', { numeric: true, sensitivity: 'base' });
+}
+
+function getRangeFieldMap() {
+  const levels = REFERENCE_CONFIG[appState.current]?.levels || [];
+  const sectionKey = levels[0]?.key || '';
+  const suktaKey = (levels.find((level) => /सूक्त|sukta/i.test(level.key)) || levels[1] || levels[0] || {}).key || '';
+  const verseKey = levels[levels.length - 1]?.key || sectionKey;
+  return { section: sectionKey, sukta: suktaKey, verse: verseKey };
+}
+
+function getRangeFieldKey() {
+  const mode = appState.rangeFilter.mode;
+  return getRangeFieldMap()[mode] || '';
+}
+
+function getScopedBaseRecords(dataset) {
+  if (appState.rangeFilter.wholeVeda) {
+    return dataset.rows.map((row, idx) => ({ row, idx }));
+  }
+
+  const levels = REFERENCE_CONFIG[appState.current]?.levels || [];
+  const out = [];
+  dataset.rows.forEach((row, idx) => {
+    for (let i = 0; i < levels.length; i += 1) {
+      const selected = appState.selectorValues[i] || '';
+      if (!selected) continue;
+      if (normalizeValue(row[levels[i].key]) !== selected) return;
+    }
+    out.push({ row, idx });
+  });
+  return out;
+}
+
+function applyRangeFilter(records) {
+  const key = getRangeFieldKey();
+  if (!key) return records;
+
+  let { start, end } = appState.rangeFilter;
+  if (!start && !end) return records;
+  if (start && end && compareReferenceValues(start, end) > 0) {
+    [start, end] = [end, start];
+  }
+
+  return records.filter(({ row }) => {
+    const v = normalizeValue(row[key]);
+    if (!v) return false;
+    if (start && compareReferenceValues(v, start) < 0) return false;
+    if (end && compareReferenceValues(v, end) > 0) return false;
+    return true;
+  });
+}
+
 function getVisibleRecords(dataset) {
   const s = appState.search.trim().toLowerCase();
   const searchKeys = getDisplayKeys(dataset);
@@ -158,17 +219,7 @@ function hasRequiredSelection() {
 }
 
 function getScopedRecords(dataset) {
-  const levels = REFERENCE_CONFIG[appState.current]?.levels || [];
-  const out = [];
-  dataset.rows.forEach((row, idx) => {
-    for (let i = 0; i < levels.length; i += 1) {
-      const selected = appState.selectorValues[i] || '';
-      if (!selected) continue;
-      if (normalizeValue(row[levels[i].key]) !== selected) return;
-    }
-    out.push({ row, idx });
-  });
-  return out;
+  return applyRangeFilter(getScopedBaseRecords(dataset));
 }
 
 function getReferenceRows(dataset, levelIndex) {
@@ -332,18 +383,128 @@ function renderAdvancedFilter() {
   }
 }
 
+function renderRangeFilter() {
+  const dataset = appState.loaded[appState.current];
+  if (!dataset || !rangeFilterPanel) return;
+
+  const map = getRangeFieldMap();
+  const options = [
+    { value: 'section', label: `Mandala / Kanda (${map.section || 'N/A'})` },
+    { value: 'sukta', label: `Suktam (${map.sukta || 'N/A'})` },
+    { value: 'verse', label: `Verse (${map.verse || 'N/A'})` }
+  ];
+  const modeKey = getRangeFieldKey();
+  const pool = getScopedBaseRecords(dataset);
+  const values = asSortedArray(new Set(pool.map(({ row }) => normalizeValue(row[modeKey])).filter(Boolean)));
+
+  rangeFilterPanel.innerHTML = '';
+
+  const modeWrap = document.createElement('div');
+  const modeLabel = document.createElement('label');
+  modeLabel.className = 'selector-label';
+  modeLabel.textContent = 'Filter by';
+  const modeSelect = document.createElement('select');
+  modeSelect.className = 'selector-input';
+  options.forEach((opt) => {
+    const item = document.createElement('option');
+    item.value = opt.value;
+    item.textContent = opt.label;
+    if (appState.rangeFilter.mode === opt.value) item.selected = true;
+    modeSelect.appendChild(item);
+  });
+  modeSelect.onchange = () => {
+    appState.rangeFilter.mode = modeSelect.value;
+    appState.rangeFilter.start = '';
+    appState.rangeFilter.end = '';
+    appState.page = 1;
+    render();
+  };
+  modeWrap.append(modeLabel, modeSelect);
+
+  const startWrap = document.createElement('div');
+  const startLabel = document.createElement('label');
+  startLabel.className = 'selector-label';
+  startLabel.textContent = 'Start';
+  const startSelect = document.createElement('select');
+  startSelect.className = 'selector-input';
+  const startAny = document.createElement('option');
+  startAny.value = '';
+  startAny.textContent = 'Any';
+  startSelect.appendChild(startAny);
+  values.forEach((val) => {
+    const option = document.createElement('option');
+    option.value = val;
+    option.textContent = val;
+    if (appState.rangeFilter.start === val) option.selected = true;
+    startSelect.appendChild(option);
+  });
+  startSelect.onchange = () => {
+    appState.rangeFilter.start = startSelect.value;
+    appState.page = 1;
+    render();
+  };
+  startWrap.append(startLabel, startSelect);
+
+  const endWrap = document.createElement('div');
+  const endLabel = document.createElement('label');
+  endLabel.className = 'selector-label';
+  endLabel.textContent = 'End';
+  const endSelect = document.createElement('select');
+  endSelect.className = 'selector-input';
+  const endAny = document.createElement('option');
+  endAny.value = '';
+  endAny.textContent = 'Any';
+  endSelect.appendChild(endAny);
+  values.forEach((val) => {
+    const option = document.createElement('option');
+    option.value = val;
+    option.textContent = val;
+    if (appState.rangeFilter.end === val) option.selected = true;
+    endSelect.appendChild(option);
+  });
+  endSelect.onchange = () => {
+    appState.rangeFilter.end = endSelect.value;
+    appState.page = 1;
+    render();
+  };
+  endWrap.append(endLabel, endSelect);
+
+  const wholeWrap = document.createElement('label');
+  wholeWrap.className = 'range-whole';
+  const wholeCheckbox = document.createElement('input');
+  wholeCheckbox.type = 'checkbox';
+  wholeCheckbox.checked = appState.rangeFilter.wholeVeda;
+  wholeCheckbox.onchange = () => {
+    appState.rangeFilter.wholeVeda = wholeCheckbox.checked;
+    appState.page = 1;
+    render();
+  };
+  const wholeText = document.createElement('span');
+  wholeText.textContent = 'Whole Veda';
+  wholeWrap.append(wholeCheckbox, wholeText);
+
+  const note = document.createElement('div');
+  note.className = 'range-note';
+  note.textContent = appState.rangeFilter.wholeVeda
+    ? 'Whole Veda is enabled; range applies across the entire selected Veda.'
+    : 'Range applies within the currently selected hierarchy path.';
+
+  rangeFilterPanel.append(modeWrap, startWrap, endWrap, wholeWrap, note);
+}
+
 function render() {
   const dataset = appState.loaded[appState.current];
   if (!dataset) return;
 
   renderHierarchySelectors();
   renderAdvancedFilter();
+  renderRangeFilter();
 
-  if (!hasRequiredSelection()) {
+  if (!appState.rangeFilter.wholeVeda && !hasRequiredSelection()) {
     const requiredIndex = getRequiredSelectionIndex();
     const levels = REFERENCE_CONFIG[appState.current].levels;
     const requiredName = requiredIndex >= 0 ? levels[requiredIndex].key : 'सूक्तम्';
-    meta.textContent = `${VEDAS[appState.current].title} · Select ${requiredName} (or verse) to load results.`;
+    meta.textContent = `${VEDAS[appState.current].title} · Select ${requiredName} (or verse) to load results, or enable Whole Veda.`;
     results.innerHTML = '';
     pagination.innerHTML = '';
     return;
@@ -357,7 +518,7 @@ function render() {
   const start = (appState.page - 1) * appState.pageSize;
   const pageRows = visible.slice(start, start + appState.pageSize);
 
-  meta.textContent = `${VEDAS[appState.current].title} · ${visible.length.toLocaleString()} matches of ${dataset.rows.length.toLocaleString()} rows`;
+  meta.textContent = `${VEDAS[appState.current].title} · ${visible.length.toLocaleString()} matches of ${getScopedBaseRecords(dataset).length.toLocaleString()} rows in scope`;
 
   results.innerHTML = '';
   pageRows.forEach(({ row, idx }, i) => {
@@ -406,7 +567,22 @@ async function loadVeda(key) {
   if (appState.loaded[key]) return;
   const res = await fetch(VEDAS[key].file);
   if (!res.ok) throw new Error(`Failed to load ${VEDAS[key].file}`);
-  appState.loaded[key] = await res.json();
+  appState.loaded[key] = normalizeDataset(await res.json());
+}
+
+function normalizeDataset(dataset) {
+  const headers = Array.isArray(dataset?.headers) ? dataset.headers : [];
+  const rows = Array.isArray(dataset?.rows) ? dataset.rows : [];
+  return {
+    headers,
+    rows: rows.map((row) => {
+      const out = {};
+      headers.forEach((key) => {
+        out[key] = row && Object.prototype.hasOwnProperty.call(row, key) ? row[key] : '';
+      });
+      return out;
+    })
+  };
 }
 
 function renderSwitch() {
