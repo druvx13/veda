@@ -52,8 +52,7 @@ function current_veda(array $query): string
 function open_veda_db(string $veda): PDO
 {
     $config = VEDA_CONFIG[$veda];
-    $root = dirname(__DIR__);
-    $dbPath = $root . '/raw/sqls/individual/' . $config['db'];
+    $dbPath = __DIR__ . '/db/' . $config['db'];
     if (!is_file($dbPath)) {
         throw new RuntimeException('SQLite file not found: ' . $dbPath);
     }
