@@ -396,6 +396,9 @@ function renderRangeFilter() {
   const modeKey = getRangeFieldKey();
   const pool = getScopedBaseRecords(dataset);
   const values = asSortedArray(new Set(pool.map(({ row }) => normalizeValue(row[modeKey])).filter(Boolean)));
+  const valueSet = new Set(values);
+  if (appState.rangeFilter.start && !valueSet.has(appState.rangeFilter.start)) appState.rangeFilter.start = '';
+  if (appState.rangeFilter.end && !valueSet.has(appState.rangeFilter.end)) appState.rangeFilter.end = '';
 
   rangeFilterPanel.innerHTML = '';
 
@@ -595,6 +598,12 @@ function renderSwitch() {
       appState.current = key;
       appState.page = 1;
       appState.selectorValues = [];
+      appState.rangeFilter = {
+        mode: 'section',
+        start: '',
+        end: '',
+        wholeVeda: false
+      };
       document.querySelectorAll('.veda-btn').forEach((x) => x.classList.remove('active'));
       b.classList.add('active');
       await loadVeda(key);
