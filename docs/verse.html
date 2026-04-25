@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>VedaKosh — Verse</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1 id="verseHeading">Veda Verse</h1>
+      <p class="subtitle">Dedicated verse page</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="verse-toolbar">
+      <a id="backLink" class="nav-btn" href="index.html">← Back to index</a>
+      <div class="verse-nav">
+        <a id="prevLink" class="nav-btn" href="#">← Previous</a>
+        <a id="nextLink" class="nav-btn" href="#">Next →</a>
+      </div>
+    </div>
+
+    <section class="selector-panel" aria-label="Advanced content filters">
+      <h2 class="selector-title">Advanced content filter</h2>
+      <p class="filter-note" id="advancedFilterSummary">Advanced filter disabled: loading all content (default).</p>
+      <div id="advancedFilterPanel" class="advanced-filter-grid"></div>
+    </section>
+
+    <article class="record-card" id="verseCard">
+      <h2 class="record-title" id="verseTitle"></h2>
+      <dl class="record-fields" id="verseFields"></dl>
+    </article>
+  </main>
+
+  <script src="verse.js"></script>
+</body>
+</html>
