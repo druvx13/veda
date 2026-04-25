@@ -177,52 +177,6 @@ body {
   font-size: .96rem;
   font-family: inherit;
 }
-
-.range-dropdown {
-  margin-top: .5rem;
-  border: 1px solid #e1e7f2;
-  border-radius: 10px;
-  background: #fbfcff;
-  padding: .35rem .55rem .55rem;
-}
-
-.range-dropdown summary {
-  cursor: pointer;
-  font-weight: 700;
-  color: #1d3f84;
-  user-select: none;
-}
-
-.range-filter-grid {
-  margin-top: .55rem;
-  display: grid;
-  gap: .5rem;
-}
-
-.range-filter-grid .selector-input {
-  width: 100%;
-}
-
-.range-whole {
-  display: inline-flex;
-  align-items: center;
-  gap: .45rem;
-  font-size: .92rem;
-  color: #22334c;
-}
-
-.range-note {
-  color: var(--muted);
-  font-size: .86rem;
-}
-
-@media (min-width: 700px) {
-  .range-filter-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    align-items: end;
-  }
-}
-
 .meta {
   margin-top: .5rem;
   color: var(--muted);

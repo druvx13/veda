@@ -167,21 +167,6 @@ function renderAdvancedFilter(dataset, veda, prefs, onChange) {
   }
 }
 
-function normalizeDataset(dataset) {
-  const headers = Array.isArray(dataset?.headers) ? dataset.headers : [];
-  const rows = Array.isArray(dataset?.rows) ? dataset.rows : [];
-  return {
-    headers,
-    rows: rows.map((row) => {
-      const out = {};
-      headers.forEach((key) => {
-        out[key] = row && Object.prototype.hasOwnProperty.call(row, key) ? row[key] : '';
-      });
-      return out;
-    })
-  };
-}
-
 (async function init() {
   const params = new URLSearchParams(window.location.search);
   const veda = params.get('veda') || 'rik';
@@ -201,7 +186,7 @@ function normalizeDataset(dataset) {
     return;
   }
 
-  const dataset = normalizeDataset(await res.json());
+  const dataset = await res.json();
   const safeIndex = Number.isFinite(idx) && idx >= 0 && idx < dataset.rows.length ? idx : 0;
   const row = dataset.rows[safeIndex] || {};
   const headers = Array.isArray(dataset.headers) ? dataset.headers : Object.keys(row);
