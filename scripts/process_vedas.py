@@ -2,8 +2,9 @@
 from __future__ import annotations
 
 import sqlite3
+import tempfile
 from pathlib import Path
-from typing import Iterable, List, Sequence
+from typing import List, Sequence
 
 from openpyxl import Workbook, load_workbook
 
@@ -37,29 +38,42 @@ def normalize_headers(headers: Sequence[object]) -> List[str]:
     return normalized
 
 
-def worksheet_to_sqlite(conn: sqlite3.Connection, sheet_name: str, rows: Iterable[Sequence[object]]) -> None:
-    iterator = iter(rows)
+def worksheet_to_sqlite(conn: sqlite3.Connection, ws) -> None:
+    sheet_name = ws.title
+    iterator = ws.iter_rows(values_only=True)
     try:
         first_row = next(iterator)
     except StopIteration:
         return
 
-    headers = normalize_headers(list(first_row))
+    raw_headers = list(first_row)
+    used_indices = [False] * len(raw_headers)
+    for row in (first_row,):
+        for index, value in enumerate(row[: len(used_indices)]):
+            if value not in (None, ""):
+                used_indices[index] = True
+    for row in iterator:
+        for index, value in enumerate(row[: len(used_indices)]):
+            if value not in (None, ""):
+                used_indices[index] = True
+
+    keep_indices = [index for index, used in enumerate(used_indices) if used]
+    if not keep_indices:
+        return
+
+    headers = normalize_headers([raw_headers[index] for index in keep_indices])
     conn.execute(f"DROP TABLE IF EXISTS {sql_ident(sheet_name)}")
-    create_columns = ", ".join(f"{sql_ident(col)} TEXT" for col in headers)
+    create_columns = ", ".join(sql_ident(col) for col in headers)
     conn.execute(f"CREATE TABLE {sql_ident(sheet_name)} ({create_columns})")
 
     placeholders = ", ".join("?" for _ in headers)
     insert_sql = f"INSERT INTO {sql_ident(sheet_name)} VALUES ({placeholders})"
 
     batch: List[Sequence[object]] = []
-    for row in iterator:
-        values = list(row)
-        if len(values) < len(headers):
-            values.extend([None] * (len(headers) - len(values)))
-        elif len(values) > len(headers):
-            values = values[: len(headers)]
-        batch.append([None if v is None else str(v) for v in values])
+    data_iterator = ws.iter_rows(min_row=2, values_only=True)
+    for row in data_iterator:
+        values = [row[index] if index < len(row) else None for index in keep_indices]
+        batch.append(values)
         if len(batch) >= 2000:
             conn.executemany(insert_sql, batch)
             batch.clear()
@@ -77,10 +91,28 @@ def workbook_to_sqlite(xlsx_path: Path, sqlite_path: Path, include_sheets: Seque
     wb = load_workbook(filename=xlsx_path, read_only=True, data_only=True)
     selected_sheets = include_sheets if include_sheets is not None else wb.sheetnames
     with sqlite3.connect(sqlite_path) as conn:
+        conn.execute("PRAGMA page_size=65536")
+        conn.execute("PRAGMA journal_mode=OFF")
+        conn.execute("PRAGMA synchronous=OFF")
         for sheet_name in selected_sheets:
             ws = wb[sheet_name]
-            worksheet_to_sqlite(conn, sheet_name, ws.iter_rows(values_only=True))
+            worksheet_to_sqlite(conn, ws)
+        conn.execute("VACUUM")
     wb.close()
+
+
+def workbook_to_sql_dump(xlsx_path: Path, sql_path: Path, include_sheets: Sequence[str] | None = None) -> None:
+    sql_path.parent.mkdir(parents=True, exist_ok=True)
+    if sql_path.exists():
+        sql_path.unlink()
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_sqlite = Path(temp_dir) / "combined.sqlite"
+        workbook_to_sqlite(xlsx_path, temp_sqlite, include_sheets=include_sheets)
+        with sqlite3.connect(temp_sqlite) as conn, sql_path.open("w", encoding="utf-8") as out_file:
+            for line in conn.iterdump():
+                out_file.write(line)
+                out_file.write("\n")
 
 
 def split_into_individual_excels() -> list[Path]:
@@ -112,7 +144,7 @@ def main() -> None:
         workbook_to_sqlite(xlsx_path, INDIVIDUAL_SQL_DIR / sqlite_name)
 
     COMBINED_SQL_DIR.mkdir(parents=True, exist_ok=True)
-    workbook_to_sqlite(SOURCE_XLSX, COMBINED_SQL_DIR / "four_vedas.sqlite")
+    workbook_to_sql_dump(SOURCE_XLSX, COMBINED_SQL_DIR / "four_vedas.sql")
 
 
 if __name__ == "__main__":
