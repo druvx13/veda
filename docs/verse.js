@@ -11,6 +11,7 @@ const TITLE_KEYS = [
 ];
 
 const FILTER_PREFS_KEY = 'vedakosh_advanced_filters_v1';
+const EMPTY_FIELD_PLACEHOLDER = '—';
 
 function normalizeValue(v) {
   if (v === null || v === undefined) return '';
@@ -199,12 +200,11 @@ function renderAdvancedFilter(dataset, veda, prefs, onChange) {
     fields.innerHTML = '';
     displayKeys.forEach((k) => {
       const text = normalizeValue(row[k]);
-      if (!text) return;
       const wrap = document.createElement('div');
       const dt = document.createElement('dt');
       dt.textContent = k;
       const dd = document.createElement('dd');
-      dd.textContent = text;
+      dd.textContent = text || EMPTY_FIELD_PLACEHOLDER;
       wrap.append(dt, dd);
       fields.appendChild(wrap);
     });

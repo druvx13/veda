@@ -41,6 +41,7 @@ const TITLE_KEYS = [
 ];
 
 const FILTER_PREFS_KEY = 'vedakosh_advanced_filters_v1';
+const EMPTY_FIELD_PLACEHOLDER = '—';
 
 const appState = {
   current: 'rik',
@@ -132,12 +133,40 @@ function searchableText(record, keys) {
 function getVisibleRecords(dataset) {
   const s = appState.search.trim().toLowerCase();
   const searchKeys = getDisplayKeys(dataset);
+  const scoped = getScopedRecords(dataset);
 
-  if (!s) return dataset.rows.map((row, idx) => ({ row, idx }));
+  if (!s) return scoped;
 
   const out = [];
-  dataset.rows.forEach((row, idx) => {
+  scoped.forEach(({ row, idx }) => {
     if (searchableText(row, searchKeys).includes(s)) out.push({ row, idx });
+  });
+  return out;
+}
+
+function getRequiredSelectionIndex() {
+  const levels = REFERENCE_CONFIG[appState.current]?.levels || [];
+  if (!levels.length) return -1;
+  const suktaIndex = levels.findIndex((level) => /सूक्त|sukta/i.test(level.key));
+  return suktaIndex >= 0 ? suktaIndex : levels.length - 1;
+}
+
+function hasRequiredSelection() {
+  const requiredIndex = getRequiredSelectionIndex();
+  if (requiredIndex < 0) return false;
+  return Boolean(appState.selectorValues[requiredIndex]);
+}
+
+function getScopedRecords(dataset) {
+  const levels = REFERENCE_CONFIG[appState.current]?.levels || [];
+  const out = [];
+  dataset.rows.forEach((row, idx) => {
+    for (let i = 0; i < levels.length; i += 1) {
+      const selected = appState.selectorValues[i] || '';
+      if (!selected) continue;
+      if (normalizeValue(row[levels[i].key]) !== selected) return;
+    }
+    out.push({ row, idx });
   });
   return out;
 }
@@ -196,17 +225,8 @@ function renderHierarchySelectors() {
     select.onchange = () => {
       appState.selectorValues[i] = select.value;
       for (let j = i + 1; j < levels.length; j += 1) appState.selectorValues[j] = '';
-
-      const allSelected = appState.selectorValues.every(Boolean);
-      if (allSelected) {
-        const matchIndex = dataset.rows.findIndex((row) => levels.every((lvl, idx) => normalizeValue(row[lvl.key]) === appState.selectorValues[idx]));
-        if (matchIndex >= 0) {
-          window.location.href = verseUrl(appState.current, matchIndex);
-          return;
-        }
-      }
-
-      renderHierarchySelectors();
+      appState.page = 1;
+      render();
     };
 
     wrap.append(label, select);
@@ -319,6 +339,16 @@ function render() {
   renderHierarchySelectors();
   renderAdvancedFilter();
 
+  if (!hasRequiredSelection()) {
+    const requiredIndex = getRequiredSelectionIndex();
+    const levels = REFERENCE_CONFIG[appState.current].levels;
+    const requiredName = requiredIndex >= 0 ? levels[requiredIndex].key : 'सूक्तम्';
+    meta.textContent = `${VEDAS[appState.current].title} · Select ${requiredName} (or verse) to load results.`;
+    results.innerHTML = '';
+    pagination.innerHTML = '';
+    return;
+  }
+
   const visible = getVisibleRecords(dataset);
   const displayKeys = getDisplayKeys(dataset);
   const totalPages = Math.max(1, Math.ceil(visible.length / appState.pageSize));
@@ -339,12 +369,11 @@ function render() {
     const fields = node.querySelector('.record-fields');
     displayKeys.forEach((k) => {
       const text = normalizeValue(row[k]);
-      if (!text) return;
       const wrap = document.createElement('div');
       const dt = document.createElement('dt');
       dt.textContent = k;
       const dd = document.createElement('dd');
-      dd.textContent = text;
+      dd.textContent = text || EMPTY_FIELD_PLACEHOLDER;
       wrap.append(dt, dd);
       fields.appendChild(wrap);
     });
